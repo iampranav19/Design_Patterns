@@ -349,6 +349,45 @@ Manager takeaway:
   everywhere — instead of N copies that can each drift out of sync.
 
 
+Decorator Pattern
+--------------------
+What it is: attaches new behavior to an object at runtime by wrapping it,
+instead of adding a field/flag to the class or subclassing for every
+combination of behavior.
+
+Files:  src/decorator/bad/{Coffee,CoffeeWithMilk,CoffeeWithMilkAndSugar,CoffeeWithMilkAndSugarAndWhip,Main}.java
+vs  src/decorator/good/{Beverage,Coffee,CondimentDecorator,Milk,Sugar,Whip,Caramel,Main}.java
+Run:    java -cp out decorator.bad.Main
+java -cp out decorator.good.Main
+(both print the identical result — same combo, different structure)
+
+Say: "Wrap an object to add behavior, instead of subclassing for every
+combination."
+
+Problem:
+- Every add-on combination gets its own subclass: CoffeeWithMilk,
+  CoffeeWithMilkAndSugar, CoffeeWithMilkAndSugarAndWhip — each extending
+  the previous one to build up the chain.
+
+Why bad:
+- 4 add-ons (Milk, Sugar, Whip, Caramel) → up to 15 non-empty-combo classes;
+  a 5th add-on roughly doubles that. This is "class explosion."
+- Inheritance only gives linear chains, not free combination: "Milk + Whip"
+  (skipping Sugar) needs its own standalone subclass — it can't reuse
+  CoffeeWithMilkAndSugarAndWhip at all.
+
+Fix:
+- Beverage interface (describe, cost); Coffee is the base implementation.
+- CondimentDecorator wraps a Beverage and adds its own cost/description on
+  top; Milk/Sugar/Whip/Caramel are each a tiny decorator.
+- Combinations are built by composition — `new Whip(new Milk(coffee))` —
+  in any order, with zero new classes, and doubling up just works.
+
+Manager takeaway:
+- Adding a new add-on (or promo, or topping) is a new file, not N new
+  subclasses to cover every combination it can appear in.
+
+
 ========= OTHER PRINCIPLES (beyond SOLID) =========
 
 DRY — Don't Repeat Yourself
@@ -457,5 +496,5 @@ class of bug: tangled changes (S), risky edits (O), runtime crashes from
 broken substitutability (L), fake/throwing implementations (I), untestable
 rigid wiring (D), duplicated logic that drifts (DRY), and unnecessary
 complexity for problems we do or don't yet have (KISS/YAGNI). The patterns
-(Singleton, Factory, Builder, Prototype, Adapter, Facade) are the reusable
-tools we reach for to get from the bad column to the good one."
+(Singleton, Factory, Builder, Prototype, Adapter, Facade, Decorator) are the
+reusable tools we reach for to get from the bad column to the good one."

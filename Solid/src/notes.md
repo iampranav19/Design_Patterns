@@ -388,6 +388,48 @@ Manager takeaway:
   subclasses to cover every combination it can appear in.
 
 
+Composite Pattern
+--------------------
+What it is: lets clients treat a single object and a group of objects
+uniformly, by giving both the same interface — so trees of objects (a whole
+made of parts, some of which are themselves wholes) can be walked with no
+type-checking.
+
+Files:  src/composite/bad/{Product,ProductBundle,Main}.java
+vs  src/composite/good/{CartItem,Product,ProductBundle,Main}.java
+Run:    java -cp out composite.bad.Main
+java -cp out composite.good.Main
+(both total 2880.0 — good just adds one more nesting level bad can't express)
+
+Say: "Give the part and the whole the same interface, so the client stops
+caring which one it's holding."
+
+Problem:
+- Product and ProductBundle share no common type. The cart is a
+  List<Object>, and every place it's walked needs an
+  instanceof Product / instanceof ProductBundle branch per case.
+- ProductBundle.addProduct() only accepts a Product — a bundle can never
+  contain another bundle.
+
+Why bad:
+- A 3rd kind of cart item means a 3rd else-if branch everywhere the cart is
+  walked, not just one.
+- "Bundle of bundles" (a Mega Bundle wrapping the iPhone Combo and the
+  School Kit) is structurally impossible without a near-duplicate class.
+
+Fix:
+- CartItem interface (getPrice, display). Product is the leaf; ProductBundle
+  is the composite, holding List<CartItem> instead of List<Product>.
+- getPrice()/display() recurse through however deep the tree goes — the
+  Main loop just calls item.getPrice() / item.display(), no instanceof.
+- A ProductBundle can now hold another ProductBundle, so nesting bundles
+  falls out for free.
+
+Manager takeaway:
+- The cart-walking code (pricing, display, receipts, exports) is written
+  once and never needs a new branch when a new composite level is added.
+
+
 ========= OTHER PRINCIPLES (beyond SOLID) =========
 
 DRY — Don't Repeat Yourself
@@ -496,5 +538,6 @@ class of bug: tangled changes (S), risky edits (O), runtime crashes from
 broken substitutability (L), fake/throwing implementations (I), untestable
 rigid wiring (D), duplicated logic that drifts (DRY), and unnecessary
 complexity for problems we do or don't yet have (KISS/YAGNI). The patterns
-(Singleton, Factory, Builder, Prototype, Adapter, Facade, Decorator) are the
-reusable tools we reach for to get from the bad column to the good one."
+(Singleton, Factory, Builder, Prototype, Adapter, Facade, Decorator,
+Composite) are the reusable tools we reach for to get from the bad column
+to the good one."

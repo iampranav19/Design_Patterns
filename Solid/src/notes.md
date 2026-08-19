@@ -430,6 +430,55 @@ Manager takeaway:
   once and never needs a new branch when a new composite level is added.
 
 
+Proxy Pattern
+----------------
+What it is: a stand-in that implements the same interface as a real object
+and sits in front of it, controlling access — checks, caching, filtering,
+lazy creation — without the real object or the caller knowing any of that
+control logic exists.
+
+Files:  src/proxy/bad/{User,RealVideoDownloader,Main}.java
+vs  src/proxy/good/{User,VideoDownloader,RealVideoDownloader,VideoDownloaderProxy,Main}.java
+Run:    java -cp out proxy.bad.Main    ("Connecting to CDN..." + a full download print twice)
+java -cp out proxy.good.Main   ("Connecting to CDN..." once; 2nd call is a cache hit)
+
+Say: "Put a stand-in in front of the real object instead of stuffing access
+control into the object itself."
+
+Problem:
+- RealVideoDownloader.downloadVideo() does 4 jobs: downloading, premium
+  access checks, region filtering, and caching.
+- The cache lives on the instance, so two separately-constructed
+  downloaders for "the same request" never share it.
+
+Why bad:
+- Downloading is the one job this class should have; the other 3 are
+  bolted on, and any other downloader (Music, Document) has to duplicate
+  all of them from scratch.
+- Nothing can get the raw, unrestricted downloader anymore — not even an
+  internal QA tool — because the checks are baked in permanently.
+- Setup (the CDN connection) happens the instant `new RealVideoDownloader()`
+  runs, even for a call that was only ever going to hit the cache — and
+  since the cache is per-instance, it doesn't even hit the cache: Main's
+  downloader2 reconnects to the CDN and redownloads a URL downloader1
+  already fetched.
+
+Fix:
+- VideoDownloader interface; RealVideoDownloader implements it and does
+  nothing but download.
+- VideoDownloaderProxy also implements VideoDownloader, holding the real
+  downloader as a lazily-created field plus the user and a shared cache.
+- The proxy checks access, checks the URL, then checks the cache — and only
+  constructs/calls the real downloader if all of that passes and nothing
+  was cached. Main calls downloadVideo() through the interface either way;
+  it can't tell whether it's talking to the real object or the proxy.
+
+Manager takeaway:
+- Access control, caching, and rate-limiting become a layer you can add or
+  remove without touching the class that does the real work — and expensive
+  setup (CDN/DB/network connections) only happens when it's truly needed.
+
+
 ========= OTHER PRINCIPLES (beyond SOLID) =========
 
 DRY — Don't Repeat Yourself
@@ -539,5 +588,5 @@ broken substitutability (L), fake/throwing implementations (I), untestable
 rigid wiring (D), duplicated logic that drifts (DRY), and unnecessary
 complexity for problems we do or don't yet have (KISS/YAGNI). The patterns
 (Singleton, Factory, Builder, Prototype, Adapter, Facade, Decorator,
-Composite) are the reusable tools we reach for to get from the bad column
-to the good one."
+Composite, Proxy) are the reusable tools we reach for to get from the bad
+column to the good one."

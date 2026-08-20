@@ -20,7 +20,6 @@ public class Main {
         } catch (SecurityException e) {
             System.out.println("Blocked: " + e.getMessage());
         }
-
         try {
             downloader1.downloadVideo("https://video.com/region-locked-movie");
         } catch (IllegalArgumentException e) {

@@ -521,6 +521,44 @@ Manager takeaway:
   — not a cross-product of every platform x every quality already shipped.
 
 
+Strategy Pattern
+-------------------
+What it is: pulls an algorithm out behind a common interface and injects
+whichever variant is needed, instead of picking behavior with an if/else
+(or switch) on a type code baked into the calling class.
+
+Files:  src/strategy/bad/{RideMatchingService,Main}.java
+vs  src/strategy/good/{MatchingStrategy,NearestDriverStrategy,SurgePriorityStrategy,AirportQueueStrategy,RideMatchingService,Main}.java
+Run:    java -cp out strategy.bad.Main    (last call: "Invalid matching strategy provided.")
+java -cp out strategy.good.Main   (first 3 lines match bad exactly; no equivalent 4th call is even possible)
+
+Say: "Swap the algorithm in from outside instead of branching on a type
+code inside the class that uses it."
+
+Problem:
+- RideMatchingService.matchRider() is an if/else chain on a String
+  matchingType ("NEAREST", "SURGE_PRIORITY", "AIRPORT_QUEUE").
+
+Why bad:
+- A new matching algorithm (e.g. pooled rides) means reopening this
+  already-tested if/else.
+- The type is just a String — nothing stops a typo like "NEARST", and
+  nothing catches it either; it silently falls through to the else branch
+  at runtime instead of failing to compile.
+
+Fix:
+- MatchingStrategy interface (match(riderLocation)); NearestDriverStrategy,
+  SurgePriorityStrategy, AirportQueueStrategy are each one small class.
+- RideMatchingService takes a MatchingStrategy via its constructor and just
+  calls strategy.match(riderLocation) — no if/else, no String comparisons.
+- Passing anything that isn't a MatchingStrategy fails to compile, so the
+  typo bug in strategy.bad simply can't happen here.
+
+Manager takeaway:
+- New matching algorithms (or A/B-testing two of them) are new files, not
+  edits to a shared if/else every rider match already depends on.
+
+
 ========= OTHER PRINCIPLES (beyond SOLID) =========
 
 DRY — Don't Repeat Yourself
@@ -630,5 +668,5 @@ broken substitutability (L), fake/throwing implementations (I), untestable
 rigid wiring (D), duplicated logic that drifts (DRY), and unnecessary
 complexity for problems we do or don't yet have (KISS/YAGNI). The patterns
 (Singleton, Factory, Builder, Prototype, Adapter, Facade, Decorator,
-Composite, Proxy, Bridge) are the reusable tools we reach for to get from
-the bad column to the good one."
+Composite, Proxy, Bridge, Strategy) are the reusable tools we reach for to
+get from the bad column to the good one."

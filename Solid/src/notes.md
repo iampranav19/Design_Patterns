@@ -479,6 +479,48 @@ Manager takeaway:
   setup (CDN/DB/network connections) only happens when it's truly needed.
 
 
+Bridge Pattern
+-----------------
+What it is: splits two independent things that both vary — here, Platform
+and Quality — into two separate hierarchies connected by composition
+("a bridge"), instead of one hierarchy with a class per combination.
+
+Files:  src/bridge/bad/{PlayQuality,WebHDPlayer,MobileHDPlayer,SmartTVUltraHDPlayer,Web4KPlayer,Main}.java
+vs  src/bridge/good/{VideoQuality,HDQuality,UltraHDQuality,FourKQuality,Player,WebPlayer,MobilePlayer,SmartTVPlayer,Main}.java
+Run:    java -cp out bridge.bad.Main
+java -cp out bridge.good.Main
+(good reproduces every bad combo, plus Mobile+4K, which bad can't reuse
+anything to build)
+
+Say: "Two things that vary independently don't belong in one inheritance
+chain — split them into two hierarchies and bridge them with composition."
+
+Problem:
+- Each class (WebHDPlayer, MobileHDPlayer, SmartTVUltraHDPlayer,
+  Web4KPlayer, ...) hardcodes one Platform + Quality combination at once.
+
+Why bad:
+- 3 platforms x 3 qualities = up to 9 classes; a 4th platform or a 4th
+  quality multiplies the other dimension all over again.
+- Mobile + 4K is a real, obviously-needed combination, but neither
+  MobileHDPlayer's "Mobile" logic nor Web4KPlayer's "4K" logic can be
+  reused for it — a new Mobile4KPlayer would have to duplicate one of them
+  from scratch.
+
+Fix:
+- VideoQuality interface (HDQuality/UltraHDQuality/FourKQuality) is the
+  implementor hierarchy; Player (WebPlayer/MobilePlayer/SmartTVPlayer) is
+  the abstraction hierarchy. Player holds a VideoQuality instead of
+  hardcoding one.
+- Any platform composes with any quality — `new MobilePlayer(new
+  FourKQuality())` — with zero new classes. 3 platforms + 3 qualities is 6
+  classes total, not 9, and it stays additive as either dimension grows.
+
+Manager takeaway:
+- New platforms and new quality tiers ship independently, at 1 class each
+  — not a cross-product of every platform x every quality already shipped.
+
+
 ========= OTHER PRINCIPLES (beyond SOLID) =========
 
 DRY — Don't Repeat Yourself
@@ -588,5 +630,5 @@ broken substitutability (L), fake/throwing implementations (I), untestable
 rigid wiring (D), duplicated logic that drifts (DRY), and unnecessary
 complexity for problems we do or don't yet have (KISS/YAGNI). The patterns
 (Singleton, Factory, Builder, Prototype, Adapter, Facade, Decorator,
-Composite, Proxy) are the reusable tools we reach for to get from the bad
-column to the good one."
+Composite, Proxy, Bridge) are the reusable tools we reach for to get from
+the bad column to the good one."

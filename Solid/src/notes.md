@@ -559,6 +559,46 @@ Manager takeaway:
   edits to a shared if/else every rider match already depends on.
 
 
+Flyweight Pattern
+--------------------
+What it is: shares one object for state that's identical across many
+instances (intrinsic state — name, color, texture), instead of every
+instance holding its own copy, keeping only what actually varies per
+instance (extrinsic state — position) outside the shared object.
+
+Files:  src/flyweight/bad/{Tree,Forest,Main}.java
+vs  src/flyweight/good/{TreeType,TreeTypeFactory,Tree,Forest,Main}.java
+Run:    java -cp out flyweight.bad.Main
+java -cp out flyweight.good.Main   (prints "Distinct TreeType objects created: 1")
+(both draw identical output for 1,000,000 trees)
+
+Say: "Share the state that's identical across every instance instead of
+copying it into each one."
+
+Problem:
+- Every Tree stores its own (x, y, name, color, texture) — 1,000,000
+  Tree objects, each holding its own copy of "Oak"/"Green"/"Rough".
+
+Why bad:
+- name/color/texture are identical on every single tree here, but nothing
+  is shared — that's a million redundant copies of the exact same 3
+  Strings for data that never actually varies per tree.
+
+Fix:
+- TreeType holds only the shared (name, color, texture) state and knows
+  how to draw at a given (x, y) — it's the flyweight.
+- TreeTypeFactory hands out the same TreeType for a given (name, color,
+  texture), creating a new one only the first time that combination is
+  seen (`computeIfAbsent`).
+- Tree now stores just (x, y) plus a reference to the shared TreeType —
+  extrinsic state only. 1,000,000 trees still share exactly 1 TreeType.
+
+Manager takeaway:
+- Real memory savings for "many objects, few distinct variants" data (map
+  tiles, particle effects, glyphs in a text editor) — cost scales with the
+  variants, not the instance count.
+
+
 ========= OTHER PRINCIPLES (beyond SOLID) =========
 
 DRY — Don't Repeat Yourself
@@ -668,5 +708,5 @@ broken substitutability (L), fake/throwing implementations (I), untestable
 rigid wiring (D), duplicated logic that drifts (DRY), and unnecessary
 complexity for problems we do or don't yet have (KISS/YAGNI). The patterns
 (Singleton, Factory, Builder, Prototype, Adapter, Facade, Decorator,
-Composite, Proxy, Bridge, Strategy) are the reusable tools we reach for to
-get from the bad column to the good one."
+Composite, Proxy, Bridge, Strategy, Flyweight) are the reusable tools we
+reach for to get from the bad column to the good one."

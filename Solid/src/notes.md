@@ -599,6 +599,54 @@ Manager takeaway:
   variants, not the instance count.
 
 
+Observer Pattern
+-------------------
+What it is: lets a "subject" broadcast events to a list of dependent
+"observers" without needing to know who's listening or what they do in
+response — observers subscribe themselves, subject just notifies.
+
+Files:  src/observer/{Events,Subscriber,Order,Flipkart,NotificationService,
+InvoiceManagementService,FlipkartApplication}.java
+Run:    java -cp out observer.FlipkartApplication
+
+Say: "The subject shouldn't know who's listening or what they do about it —
+it just broadcasts, and interested parties subscribe."
+
+Problem (what skipping this pattern looks like):
+- Without it, Flipkart.placeOrder()/cancelOrder() would call
+  generateInvoice(), sendNotification(), etc. directly, inline, by name.
+
+Why bad:
+- A new side-effect for "order placed" (loyalty points, SMS) means
+  reopening placeOrder() again to bolt on another direct call.
+- Flipkart ends up depending on every downstream service, instead of each
+  service depending on Flipkart.
+
+Fix:
+- Subscriber<T> interface (listen(event, details)) is the observer contract.
+- Flipkart holds a static Map<Events, List<Subscriber>>; registerSubscriber
+  adds to it, and placeOrder/cancelOrder just call notify(event, order),
+  which loops whatever subscribers are registered for that event.
+- NotificationService and InvoiceManagementService each register themselves
+  for the events they care about inside their own constructor — Flipkart
+  never references either class by name.
+
+Manager takeaway:
+- New downstream behavior (loyalty points, SMS, analytics) is a new
+  Subscriber class, not an edit to Flipkart's order flow.
+
+Gotcha we actually hit here (worth remembering):
+- registerSubscriber's first-entry path used `List.of(subscriber)` — an
+  IMMUTABLE list — so a 2nd subscriber for the same event threw
+  UnsupportedOperationException on `.add()`. Fixed with
+  `subscribers.computeIfAbsent(event, e -> new ArrayList<>()).add(subscriber)`.
+- FlipkartApplication.main never actually constructed
+  NotificationService/InvoiceManagementService, so the constructors that do
+  the registering never ran — subscribers.get(event) came back null and
+  notify() threw an NPE. The fix is to construct both subscribers before
+  calling placeOrder() — that's what wires the observers up at all.
+
+
 ========= OTHER PRINCIPLES (beyond SOLID) =========
 
 DRY — Don't Repeat Yourself
@@ -708,5 +756,5 @@ broken substitutability (L), fake/throwing implementations (I), untestable
 rigid wiring (D), duplicated logic that drifts (DRY), and unnecessary
 complexity for problems we do or don't yet have (KISS/YAGNI). The patterns
 (Singleton, Factory, Builder, Prototype, Adapter, Facade, Decorator,
-Composite, Proxy, Bridge, Strategy, Flyweight) are the reusable tools we
-reach for to get from the bad column to the good one."
+Composite, Proxy, Bridge, Strategy, Flyweight, Observer) are the reusable
+tools we reach for to get from the bad column to the good one."

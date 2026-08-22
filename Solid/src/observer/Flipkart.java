@@ -26,4 +26,8 @@ public class Flipkart {
             subscriber.listen(event, order);
         }
     }
+
+    public void unsubscribe(Subscriber subscriber) {
+        subscribers.values().forEach(list -> list.remove(subscriber));
+    }
 }
